@@ -14,7 +14,7 @@
     box-shadow:0 0 90px rgba(57,246,255,.14), inset 0 0 120px rgba(138,92,255,.10)}
   .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
     text-align:center;padding:24px;background:radial-gradient(circle at 50% 40%, rgba(10,12,30,.55), rgba(4,5,13,.92));
-    backdrop-filter:blur(2px);z-index:5}
+    backdrop-filter:blur(2px);z-index:50;pointer-events:auto}
   .title{font-size:clamp(38px,9vw,76px);font-weight:900;letter-spacing:.06em;margin:0;line-height:1;
     background:linear-gradient(92deg,var(--cyan),var(--mag) 55%,var(--amber));
     -webkit-background-clip:text;background-clip:text;color:transparent;
@@ -22,7 +22,11 @@
   .sub{color:#9fb4d4;letter-spacing:.34em;text-transform:uppercase;font-size:12px;margin:14px 0 30px}
   .btn{border:1px solid var(--cyan);color:var(--cyan);background:rgba(57,246,255,.06);
     padding:14px 34px;border-radius:999px;font-size:16px;font-weight:700;letter-spacing:.14em;
-    text-transform:uppercase;cursor:pointer;transition:.15s;text-shadow:0 0 12px rgba(57,246,255,.6)}
+    text-transform:uppercase;cursor:pointer;transition:.15s;text-shadow:0 0 12px rgba(57,246,255,.6);
+    pointer-events:auto;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  .starthint{margin-top:16px;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#7d90b0;
+    animation:pulse 2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
   .btn:hover{background:rgba(57,246,255,.16);box-shadow:0 0 30px rgba(57,246,255,.5)}
   .btn.pink{border-color:var(--mag);color:var(--mag);background:rgba(255,62,165,.07);text-shadow:0 0 12px rgba(255,62,165,.6)}
   .btn.pink:hover{background:rgba(255,62,165,.16);box-shadow:0 0 30px rgba(255,62,165,.5)}
@@ -69,6 +73,7 @@
     <h1 class="title">NEON DRIFT</h1>
     <div class="sub">survive the drift</div>
     <button class="btn" id="playBtn">Play</button>
+    <div class="starthint">tap anywhere to begin</div>
     <div class="keys">
       <b>Move</b> — arrow keys / A D, or drag on screen<br>
       <b>Fire</b> — automatic. Collect drops: <span style="color:var(--lime)">spread</span>,
@@ -140,6 +145,7 @@
     if(e.key===" "){ e.preventDefault(); }
     if(e.key.toLowerCase()==="p"){ if(MODE==="play") pauseGame(); else if(MODE==="pause") resumeGame(); }
     if(e.key==="ArrowLeft"||e.key==="ArrowRight") e.preventDefault();
+    if(e.key==="Enter" || (e.key===" " && MODE!=="play")){ if(MODE==="menu"||MODE==="over") startGame(); }
   });
   window.addEventListener("keyup",function(e){ keys[e.key.toLowerCase()]=false; });
 
@@ -186,7 +192,9 @@
     ui.banner.textContent = txt; ui.banner.classList.add("show"); bannerTimer=1.4;
   }
 
+  var startLock=false;
   function startGame(){
+    if(startLock) return; startLock=true; setTimeout(function(){ startLock=false; }, 400);
     reset(); MODE="play";
     hide(ui.menu); hide(ui.over); hide(ui.pause); show(ui.hud);
     banner("WAVE 1");
@@ -206,6 +214,11 @@
   document.getElementById("againBtn").onclick = startGame;
   document.getElementById("menuBtn").onclick = function(){ MODE="menu"; hide(ui.over); show(ui.menu); };
   document.getElementById("resumeBtn").onclick = resumeGame;
+  // start from anywhere on the menu (mouse, touch or pen) — belt and braces
+  ["pointerdown","click"].forEach(function(ev){
+    ui.menu.addEventListener(ev, function(){ if(MODE==="menu") startGame(); });
+    ui.over.addEventListener(ev, function(e){ if(MODE==="over" && e.target===ui.over) startGame(); });
+  });
 
   /* ---------------- particles ---------------- */
   function burst(x,y,color,scale){
